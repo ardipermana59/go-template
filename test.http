@@ -1,0 +1,230 @@
+@baseUrl = http://localhost:8080/api/v1
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+### ========================================
+### AUTH ENDPOINTS
+### ========================================
+
+### Register User 1
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "password_confirm": "password123"
+}
+
+### Register User 2 - Duplicate Email (should fail with consistent error)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "password_confirm": "password123"
+}
+
+### Test Validation Errors - Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jo",
+  "email": "invalid-email",
+  "password": "12345",
+  "password_confirm": "123456"
+}
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+
+### Login - Invalid Credentials (consistent error format)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "wrongpassword"
+}
+
+### ========================================
+### PROTECTED USER ENDPOINTS
+### ========================================
+
+### Get Profile
+GET {{baseUrl}}/profile
+Authorization: Bearer {{token}}
+
+### Update Profile
+PUT {{baseUrl}}/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Updated",
+  "email": "john.updated@example.com"
+}
+
+### Update Profile - Duplicate Email (should fail with consistent error)
+PUT {{baseUrl}}/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "existing@example.com"
+}
+
+### Change Password
+PUT {{baseUrl}}/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "old_password": "password123",
+  "new_password": "newpassword123",
+  "new_password_confirm": "newpassword123"
+}
+
+### Change Password - Wrong Old Password (consistent error)
+PUT {{baseUrl}}/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "old_password": "wrongpassword",
+  "new_password": "newpassword123",
+  "new_password_confirm": "newpassword123"
+}
+
+### ========================================
+### PUBLIC POST ENDPOINTS
+### ========================================
+
+### Get All Posts (Public)
+GET {{baseUrl}}/posts
+
+### Get Post By ID (Public)
+GET {{baseUrl}}/posts/1
+
+### Get Post By ID - Not Found (consistent error)
+GET {{baseUrl}}/posts/9999
+
+### Get Posts By User ID (Public)
+GET {{baseUrl}}/users/1/posts
+
+### ========================================
+### PROTECTED POST ENDPOINTS
+### ========================================
+
+### Create Post (Protected)
+POST {{baseUrl}}/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "My First Post",
+  "content": "This is the content of my first post. It needs to be at least 10 characters long."
+}
+
+### Create Post - Validation Error
+POST {{baseUrl}}/posts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "AB",
+  "content": "Short"
+}
+
+### Get My Posts (Protected)
+GET {{baseUrl}}/posts/my
+Authorization: Bearer {{token}}
+
+### Update Post (Protected - Owner Only)
+PUT {{baseUrl}}/posts/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Updated Post Title",
+  "content": "Updated content that is long enough to pass validation rules."
+}
+
+### Update Post - Not Owner (consistent error)
+PUT {{baseUrl}}/posts/1
+Authorization: Bearer <another-user-token>
+Content-Type: application/json
+
+{
+  "title": "Trying to update someone else's post"
+}
+
+### Delete Post (Protected - Owner Only)
+DELETE {{baseUrl}}/posts/1
+Authorization: Bearer {{token}}
+
+### Delete Post - Not Owner (consistent error)
+DELETE {{baseUrl}}/posts/1
+Authorization: Bearer <another-user-token>
+
+### ========================================
+### ADMIN ONLY ENDPOINTS
+### ========================================
+
+### Admin: Get All Users
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{token}}
+
+### Admin: Get User By ID
+GET {{baseUrl}}/admin/users/1
+Authorization: Bearer {{token}}
+
+### Admin: Get User By ID - Not Found (consistent error)
+GET {{baseUrl}}/admin/users/9999
+Authorization: Bearer {{token}}
+
+### Admin: Update User
+PUT {{baseUrl}}/admin/users/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated by Admin",
+  "email": "updated@example.com"
+}
+
+### Admin: Delete User
+DELETE {{baseUrl}}/admin/users/2
+Authorization: Bearer {{token}}
+
+### ========================================
+### ERROR TESTS
+### ========================================
+
+### Test Unauthorized - No Token
+GET {{baseUrl}}/profile
+
+### Test Unauthorized - Invalid Token Format
+GET {{baseUrl}}/profile
+Authorization: invalid-format
+
+### Test Unauthorized - Invalid Token
+GET {{baseUrl}}/profile
+Authorization: Bearer invalid-token-here
+
+### Test Forbidden - Non-admin accessing admin route
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{token}}
+
+### Test Invalid ID Format
+GET {{baseUrl}}/posts/abc
+Authorization: Bearer {{token}}
